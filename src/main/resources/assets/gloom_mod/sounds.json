@@ -1,0 +1,15 @@
+{
+  "attack_warning": {
+
+    "subtitle": "sounds.gloom_mod.attack_warning",
+    "sounds": [
+      {
+        "name": "gloom_mod:attack_warning",
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1,
+        "attenuation_distance": 16.0
+      }
+    ]
+  }
+}
