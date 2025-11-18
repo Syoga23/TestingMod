@@ -50,8 +50,8 @@ public class PlayerTickEventHandler {
         //100 - 10 = 90
 
         if ((tick >= (DAMAGE_DELAY_TICKS - warningSoundTime)) && !soundPlayed) {
-            player.playNotifySound(ModSound.ATTACK_WARNING.get(), SoundSource.MASTER, 1.0F, 1.0F);
-            sendMessageToPlayer(player);
+            player.playSound(ModSound.ATTACK_WARNING.get(),1.0F, 1.0F);
+
             soundPlayed = true;
         }
 
@@ -70,14 +70,13 @@ public class PlayerTickEventHandler {
             player.invulnerableTime = 0;
             player.hurt(gloomDamage, damage);
             player.invulnerableTime = oldInvulnerableTime;
-            sendMessageToPlayer(player);
+
             tick = 0;
 
             soundPlayed = false;
             return;
         }
 
-        sendMessageToPlayer(player);
         tick++;
 
     }
@@ -101,10 +100,6 @@ public class PlayerTickEventHandler {
             skyLight -= world.isThundering() ? 3 : 2;
         }
         return Math.max(blockLight, skyLight);
-    }
-
-    private static void sendMessageToPlayer(Player player) {
-        player.sendSystemMessage(Component.literal("counter:" + tick).withStyle(ChatFormatting.DARK_GRAY));
     }
 
 }
