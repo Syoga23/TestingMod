@@ -1,8 +1,13 @@
 package net.syoga78.gloom_mod;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.util.TimeSource;
+import net.minecraft.util.TimeUtil;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
@@ -12,139 +17,94 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-
 import static net.minecraft.world.level.LightLayer.SKY;
 
 @EventBusSubscriber(modid = Gloom.MOD_ID, value = Dist.CLIENT)
 public class PlayerTickEventHandler {
 
-    private static final Map<UUID, Boolean> soundFlags = new HashMap<>();
+    private static int tick = 0;
+    private static boolean soundPlayed = false;
+
+    private static final int warningSoundTime = 10;
+    private static final int DAMAGE_DELAY_TICKS = 100;
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
 
         Player player = event.getEntity();
         Level world = player.level();
-
-        UUID playerId = player.getUUID();
-
         BlockPos pos = player.blockPosition().above();
-        int lightLevel = getLightLevel(event, pos);
-        int warnThreshold = 8;
+        int lightLevel = getLightLevel(player, pos);
+        boolean isDark = lightLevel <= Gloom.DARKNESS_THRESHOLD;
 
-        boolean inDarkness = (lightLevel <= Gloom.DARKNESS_THRESHOLD);
-        String dimensionKey = world.dimension().location().toString();
-        boolean dimensionNotSafe = !Gloom.SAFE_DIMENSIONS.contains(dimensionKey);
+        if(!player.isAlive()) return;
+        if(player.isCreative() || player.isSpectator()) return;
+        if(Gloom.SAFE_DIMENSIONS.contains(world.dimension().location().toString()))  return;
+        if(player.hasEffect(MobEffects.NIGHT_VISION)) return;
 
-        if (!dimensionNotSafe || player.isCreative()) {
-            soundFlags.remove(playerId);
-            Gloom.GLOOM_COUNTDOWN.remove(playerId);
+        if (!isDark) {
+            tick = 0;
             return;
         }
 
-        if (!inDarkness) {
-            soundFlags.remove(playerId);
-            Gloom.GLOOM_COUNTDOWN.remove(playerId);
-            return;
+        //100 - 10 = 90
+
+        if ((tick >= (DAMAGE_DELAY_TICKS - warningSoundTime)) && !soundPlayed) {
+            player.playNotifySound(ModSound.ATTACK_WARNING.get(), SoundSource.MASTER, 1.0F, 1.0F);
+            sendMessageToPlayer(player);
+            soundPlayed = true;
         }
 
+        if (tick >= DAMAGE_DELAY_TICKS) {
 
+            float currentHealth = player.getHealth() + player.getAbsorptionAmount();
+            float damage;
 
-        if (player.hasEffect(MobEffects.NIGHT_VISION)) {
-            soundFlags.remove(playerId);
-            Gloom.GLOOM_COUNTDOWN.remove(playerId);
-            return;
-        }
-
-        Integer countdown = Gloom.GLOOM_COUNTDOWN.get(playerId);
-
-        Gloom.LOGGER.info("счетчик:{}", countdown);
-
-        if (countdown == null) {
-            countdown = Gloom.DAMAGE_INTERVAL_TICKS;
-            Gloom.GLOOM_COUNTDOWN.put(playerId, countdown);
-            soundFlags.put(playerId, false);
-            Gloom.LOGGER.info("New countdown started for {}",countdown);
-        }
-
-        boolean soundPlayed = soundFlags.getOrDefault(playerId, false);
-
-        if (countdown <= warnThreshold && !soundPlayed) {
-            player.playNotifySound(ModSound.ATTACK_WARNING.get(), SoundSource.MASTER, 1.0f, 1.0f);
-            soundFlags.put(playerId, true);
-            Gloom.LOGGER.info("Sound played:{}", countdown);
-        }
-
-        if (countdown > warnThreshold) {
-            soundFlags.put(playerId, false);
-        }
-
-            if (countdown <= 0) {
-
-                float currentHealth = player.getHealth() + player.getAbsorptionAmount();
-                float damage;
-                if (currentHealth > 1.0f) {
-                    damage = Math.round(currentHealth / 2.0f);
-
-                } else if (currentHealth <= 1.0f && player.isAlive()) {
-                    damage = Gloom.DAMAGE_AMOUNT;
-                } else {
-                    return;
-                }
-                DamageSource gloomDamage = world.damageSources().sonicBoom(player);
-                player.hurt(gloomDamage, damage);
-                Gloom.LOGGER.info("Shadow hit at:{} with damage:{}", countdown, damage);
-                soundFlags.put(playerId, false);
-                Gloom.GLOOM_COUNTDOWN.put(playerId, Gloom.DAMAGE_INTERVAL_TICKS);
+            if (currentHealth > 1.0f) {
+                damage = Math.round(currentHealth / 2.0f);
             } else {
-                Gloom.GLOOM_COUNTDOWN.put(playerId, countdown - 1);
+                damage = Gloom.DAMAGE_AMOUNT;
             }
+            DamageSource gloomDamage = world.damageSources().generic();
+            int oldInvulnerableTime = player.invulnerableTime;
+            player.invulnerableTime = 0;
+            player.hurt(gloomDamage, damage);
+            player.invulnerableTime = oldInvulnerableTime;
+            sendMessageToPlayer(player);
+            tick = 0;
+
+            soundPlayed = false;
+            return;
         }
 
-        /*
-        private static int getInitialCountdown() {
-            return Gloom.DAMAGE_INTERVAL_TICKS + Gloom.RANDOM.nextInt(101);
-        }
-
-        private static int getNextCountdown() {
-            return Gloom.DAMAGE_INTERVAL_TICKS + Gloom.RANDOM.nextInt(121);
-        } */
-
-        private static int getLightLevel(PlayerTickEvent.Post event, BlockPos pos){
-
-            Level world = event.getEntity().level();
-            int result = 15;
-
-            if (world.dimensionType().hasSkyLight()) {
-
-                int skyLight;
-                int blockLight = world.getChunkSource().getLightEngine().getRawBrightness(pos, 15);
-
-                int i = world.getBrightness(SKY, pos) - world.getSkyDarken();
-                float f = world.getSunAngle(1.0F);
-                if (i > 0) {
-                    float f1 = f < (float) Math.PI ? 0.0F : ((float) Math.PI * 2F);
-                    f += (f1 - f) * 0.2F;
-                    i = Math.round((float) i * Mth.cos(f));
-                }
-                skyLight = Mth.clamp(i, 0, 15);
-
-                if (world.isRainingAt(pos)) {
-                    if (world.isThundering()) {
-                        skyLight -= 3;
-                    } else {
-                        skyLight -= 2;
-                    }
-                }
-
-                result = Math.max(blockLight, skyLight);
-            }
-            return result;
-        }
+        sendMessageToPlayer(player);
+        tick++;
 
     }
+
+    private static int getLightLevel(Player player, BlockPos pos) {
+        Level world = player.level();
+        int blockLight = world.getChunkSource().getLightEngine().getRawBrightness(pos, 0);
+        if (!world.dimensionType().hasSkyLight()) {
+            return blockLight;
+        }
+        int skyDarken = world.getSkyDarken();
+        int skyLightRaw = world.getBrightness(SKY, pos) - skyDarken;
+        float sunAngle = world.getSunAngle(1.0F);
+        if (skyLightRaw > 0) {
+            float adjustedAngle = sunAngle < (float) Math.PI ? sunAngle : ((float) Math.PI * 2.0F);
+            adjustedAngle += (adjustedAngle < 0.0F ? (float) Math.PI * 2.0F : 0.0F) * 0.2F;
+            skyLightRaw = Math.round((float) skyLightRaw * Mth.cos(adjustedAngle));
+        }
+        int skyLight = Mth.clamp(skyLightRaw, 0, 15);
+        if (world.isRainingAt(pos)) {
+            skyLight -= world.isThundering() ? 3 : 2;
+        }
+        return Math.max(blockLight, skyLight);
+    }
+
+    private static void sendMessageToPlayer(Player player) {
+        player.sendSystemMessage(Component.literal("counter:" + tick).withStyle(ChatFormatting.DARK_GRAY));
+    }
+
+}
