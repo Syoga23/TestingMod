@@ -1,13 +1,6 @@
 {
-  "itemGroup.examplemod": "Example Mod Tab",
-  "block.examplemod.example_block": "Example Block",
-  "item.examplemod.example_item": "Example Item",
-
-  "examplemod.configuration.title": "Example Mod Configs",
-  "examplemod.configuration.section.examplemod.common.toml": "Example Mod Configs",
-  "examplemod.configuration.section.examplemod.common.toml.title": "Example Mod Configs",
-  "examplemod.configuration.items": "Item List",
-  "examplemod.configuration.logDirtBlock": "Log Dirt Block",
-  "examplemod.configuration.magicNumberIntroduction": "Magic Number Text",
-  "examplemod.configuration.magicNumber": "Magic Number"
+  "config.gloom_mod.lastHitDamage": "Damage that will be dealt on 1 hp(half heart)",
+  "config.gloom_mod.damageInterval": "Time interval between hits in minecraft ticks(20 is one second)",
+  "config.gloom_mod.lightLevel": "threshold of light level after which you will start to take damage",
+  "config.gloom_mod.dimensions": "Safe dimensions where youdont get attacked by gloom"
 }

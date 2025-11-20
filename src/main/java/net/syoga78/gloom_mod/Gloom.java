@@ -27,10 +27,7 @@ public class Gloom {
     public static final String MOD_ID = "gloom_mod";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public static final Map<UUID, Integer> GLOOM_COUNTDOWN = new HashMap<>();
-    public static final Random RANDOM = new Random(); // For randomization
-
-    public static List<String> SAFE_DIMENSIONS;
+    public static List<? extends String> SAFE_DIMENSIONS;
     public static int DARKNESS_THRESHOLD;
     public static int DAMAGE_INTERVAL_TICKS;
     public static float DAMAGE_AMOUNT;
@@ -39,7 +36,6 @@ public class Gloom {
         modEvents.addListener(this::commonSetup);
 
         ModSound.SOUND_EVENTS.register(modEvents);
-
         NeoForge.EVENT_BUS.register(this);
 
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
@@ -47,7 +43,7 @@ public class Gloom {
 
     private void commonSetup(FMLCommonSetupEvent event) {
 
-        SAFE_DIMENSIONS = Config.DIMENSIONS_SAFE_LIST.getPath();
+        SAFE_DIMENSIONS = Config.DIMENSIONS_SAFE_LIST.get();
         DARKNESS_THRESHOLD = Config.DARKNESS_THRESHOLD.getRaw();
         DAMAGE_INTERVAL_TICKS = Config.DAMAGE_INTERVAL_TICKS.getRaw();
         DAMAGE_AMOUNT = Config.LAST_HIT_DAMAGE.getRaw();

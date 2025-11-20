@@ -1,13 +1,7 @@
 package net.syoga78.gloom_mod;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.util.TimeSource;
-import net.minecraft.util.TimeUtil;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
@@ -25,7 +19,7 @@ public class PlayerTickEventHandler {
     private static int tick = 0;
     private static boolean soundPlayed = false;
 
-    private static final int warningSoundTime = 10;
+    private static final int warningSoundTime = 8;
     private static final int DAMAGE_DELAY_TICKS = 100;
 
     @SubscribeEvent
@@ -39,15 +33,14 @@ public class PlayerTickEventHandler {
 
         if(!player.isAlive()) return;
         if(player.isCreative() || player.isSpectator()) return;
-        if(Gloom.SAFE_DIMENSIONS.contains(world.dimension().location().toString()))  return;
+        if(Gloom.SAFE_DIMENSIONS.contains(world.dimension().location().toString())) return;
         if(player.hasEffect(MobEffects.NIGHT_VISION)) return;
+
 
         if (!isDark) {
             tick = 0;
             return;
         }
-
-        //100 - 10 = 90
 
         if ((tick >= (DAMAGE_DELAY_TICKS - warningSoundTime)) && !soundPlayed) {
             player.playSound(ModSound.ATTACK_WARNING.get(),1.0F, 1.0F);

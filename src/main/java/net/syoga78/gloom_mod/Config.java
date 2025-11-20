@@ -3,13 +3,6 @@ package net.syoga78.gloom_mod;
 import java.awt.*;
 import java.util.List;
 
-import net.minecraft.client.gui.font.providers.UnihexProvider;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.data.worldgen.DimensionTypes;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
-import net.minecraft.world.level.levelgen.WorldDimensions;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class Config {
@@ -17,19 +10,23 @@ public class Config {
 
     public static final ModConfigSpec.ConfigValue<Float> LAST_HIT_DAMAGE = BUILDER
             .comment("Damage that will be dealt when player have 1 hp")
+            .translation("config.gloom_mod.lastHitDamage")
             .define("lastHitDamage", 2.0f);
 
     public static final ModConfigSpec.ConfigValue<Integer> DAMAGE_INTERVAL_TICKS = BUILDER
             .comment("Interval between hits")
+            .translation("config.gloom_mod.damageInterval")
             .define("damageInterval", 100);
 
     public static final ModConfigSpec.ConfigValue<Integer> DARKNESS_THRESHOLD = BUILDER
-            .comment("Light level to die")
+            .comment("Light level threshold after which you will start taking damage")
+            .translation("config.gloom_mod.lightLevel")
             .define("lightLevel", 1);
 
     public static final ModConfigSpec.ConfigValue<List<? extends String>> DIMENSIONS_SAFE_LIST = BUILDER
             .comment("A list of dimensions that are safe from gloom.")
-            .define("dimensions", List.of("minecraft:the_nether, minecraft:the_end"));
+            .translation("config.gloom_mod.dimensions")
+            .define("dimensions", List.of("minecraft:the_nether", "minecraft:the_end"), o -> o instanceof String);
 
 
     static final ModConfigSpec SPEC = BUILDER.build();
